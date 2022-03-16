@@ -108,12 +108,12 @@ if (autoChangeMode === '1') {
 <hr>
 <h2 id="关键类"><a href="#关键类" class="headerlink" title="关键类"></a>关键类</h2><h3 id="Addressables"><a href="#Addressables" class="headerlink" title="Addressables"></a>Addressables</h3><h4 id="Addressables：静态类"><a href="#Addressables：静态类" class="headerlink" title="Addressables：静态类"></a>Addressables：静态类</h4><ul>
 <li><p>包含AddressablesImpl ，并构造 GC LRUCacheAllocationStrategy传过去 Impl接受参数为：IAllocationStrategy</p>
-<p><img src= "yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201009180303931.png" alt="image-20201009180303931"></p>
+<p><img src= "/yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201009180303931.png" alt="image-20201009180303931"></p>
 </li>
 <li><p>UML图如下：</p>
 </li>
 </ul>
-<p><img src= "yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201009180315189.png" alt="image-20201009180315189"></p>
+<p><img src= "/yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201009180315189.png" alt="image-20201009180315189"></p>
 <ul>
 <li>ResourceManager 与 InstanceProvider 都是在Impl类里面初始化</li>
 </ul>
@@ -123,7 +123,7 @@ if (autoChangeMode === '1') {
 <li>方法的实现在 AddressablesImpl类</li>
 <li>UML图如下：</li>
 </ul>
-<p><img src= "yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201009180340652.png" alt="image-20201009180340652"></p>
+<p><img src= "/yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201009180340652.png" alt="image-20201009180340652"></p>
 <h4 id="AddressablesImpl-Addressables的实现类"><a href="#AddressablesImpl-Addressables的实现类" class="headerlink" title="AddressablesImpl : Addressables的实现类"></a>AddressablesImpl : Addressables的实现类</h4><ul>
 <li><p>持有并初始化 ResourceManager ，构造函数里面实现</p>
 <figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">AddressablesImpl</span>(<span class="params">IAllocationStrategy alloc</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">m_ResourceManager = <span class="keyword">new</span> ResourceManager(alloc);</span><br><span class="line">SceneManager.sceneUnloaded += OnSceneUnloaded;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -165,7 +165,7 @@ if (autoChangeMode === '1') {
 <li><p>UML图如下：</p>
 </li>
 </ul>
-<p><img src= "yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201009180355613.png" alt="image-20201009180355613"></p>
+<p><img src= "/yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201009180355613.png" alt="image-20201009180355613"></p>
 <h4 id="AsyncOperationHandle"><a href="#AsyncOperationHandle" class="headerlink" title="AsyncOperationHandle"></a>AsyncOperationHandle</h4><ul>
 <li><p>Addressable的很多方法被调用后都会返回一个AsyncOperationHandle的结构体，可以得到当前的状态和结果。在没有调用Addressables.Release与Addressables.ReleaseInstance前，AsyncOperationHandle是一直有效的，包括其Status与Result中的值。</p>
 </li>
@@ -182,7 +182,7 @@ if (autoChangeMode === '1') {
 <ul>
 <li>UML 如下图：</li>
 </ul>
-<p><img src= "yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201009180412907.png" alt="image-20201009180412907"></p>
+<p><img src= "/yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201009180412907.png" alt="image-20201009180412907"></p>
 </li>
 </ul>
 <h3 id="ResourceManager"><a href="#ResourceManager" class="headerlink" title="ResourceManager"></a>ResourceManager</h3><ul>
@@ -201,11 +201,11 @@ if (autoChangeMode === '1') {
 <li><p>UML图如下：</p>
 </li>
 </ul>
-<p><img src= "yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201009180428626.png" alt="image-20201009180428626"></p>
+<p><img src= "/yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201009180428626.png" alt="image-20201009180428626"></p>
 <h4 id="IResourceProvider"><a href="#IResourceProvider" class="headerlink" title="IResourceProvider"></a>IResourceProvider</h4><ul>
 <li>UML 图继承如下：</li>
 </ul>
-<p><img src= "yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201009180449846.png" alt="image-20201009180449846"></p>
+<p><img src= "/yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201009180449846.png" alt="image-20201009180449846"></p>
 <h4 id="ResourceManager-1"><a href="#ResourceManager-1" class="headerlink" title="ResourceManager"></a>ResourceManager</h4><ul>
 <li>m_ResourceProviders :</li>
 </ul>
