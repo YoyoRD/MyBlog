@@ -1,0 +1,238 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>高效地编刷草 | Yoyo</title><meta name="description" content="地编工具之高效草解决什么问题？传统做法 面片草 合批方式：静态合批 动态效果：通过顶点色限制，局部顶点动画摆动 局限性：内存很大，无法差异化     如何解决 GPU Instancing 代替 静态合批   优化：面片草改模型草，增加LOD，合成一簇草丛，减少GPU Instancing DrawCall  优化：对地形分块，实现AOI (256 x 256  , 128 x128) GPU I"><meta name="keywords" content="地形编辑器,刷草,优化"><meta name="author" content="Yoyo"><meta name="copyright" content="Yoyo"><meta name="format-detection" content="telephone=no"><link rel="shortcut icon" href="yoyord.github.io/img/favicon.jpg"><link rel="canonical" href="https://yoyord.github.io/posts/45887/"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//fonts.googleapis.com" crossorigin="crossorigin"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="preconnect" href="//zz.bdstatic.com"/><meta property="og:type" content="article"><meta property="og:title" content="高效地编刷草"><meta property="og:url" content="https://yoyord.github.io/posts/45887/"><meta property="og:site_name" content="Yoyo"><meta property="og:description" content="地编工具之高效草解决什么问题？传统做法 面片草 合批方式：静态合批 动态效果：通过顶点色限制，局部顶点动画摆动 局限性：内存很大，无法差异化     如何解决 GPU Instancing 代替 静态合批   优化：面片草改模型草，增加LOD，合成一簇草丛，减少GPU Instancing DrawCall  优化：对地形分块，实现AOI (256 x 256  , 128 x128) GPU I"><meta property="og:image" content="https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg"><meta property="article:published_time" content="2020-10-09T11:00:00.000Z"><meta property="article:modified_time" content="2020-10-09T11:00:00.000Z"><meta name="twitter:card" content="summary"><script>var activateDarkMode = function () {
+  document.documentElement.setAttribute('data-theme', 'dark')
+  if (document.querySelector('meta[name="theme-color"]') !== null) {
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#000')
+  }
+}
+var activateLightMode = function () {
+  document.documentElement.setAttribute('data-theme', 'light')
+  if (document.querySelector('meta[name="theme-color"]') !== null) {
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#fff')
+  }
+}
+
+var getCookies = function (name) {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop().split(';').shift()
+}
+
+var autoChangeMode = 'false'
+var t = getCookies('theme')
+if (autoChangeMode === '1') {
+  var isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+  var isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+  var isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+  var hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+  if (t === undefined) {
+    if (isLightMode) activateLightMode()
+    else if (isDarkMode) activateDarkMode()
+    else if (isNotSpecified || hasNoSupport) {
+      console.log('You specified no preference for a color scheme or your browser does not support it. I Schedule dark mode during night time.')
+      var now = new Date()
+      var hour = now.getHours()
+      var isNight = hour <= 6 || hour >= 18
+      isNight ? activateDarkMode() : activateLightMode()
+    }
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(function (e) {
+      if (Cookies.get('theme') === undefined) {
+        e.matches ? activateDarkMode() : activateLightMode()
+      }
+    })
+  } else if (t === 'light') activateLightMode()
+  else activateDarkMode()
+} else if (autoChangeMode === '2') {
+  now = new Date()
+  hour = now.getHours()
+  isNight = hour <= 6 || hour >= 18
+  if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+  else if (t === 'light') activateLightMode()
+  else activateDarkMode()
+} else {
+  if (t === 'dark') activateDarkMode()
+  else if (t === 'light') activateLightMode()
+}</script><link rel="stylesheet" href="yoyord.github.io/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css"><link rel="prev" title="现代图形学学习笔记(二)渲染管线" href="https://yoyord.github.io/posts/17190/"><link rel="next" title="高性能Lua代码" href="https://yoyord.github.io/posts/34485/"><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web&amp;display=swap"><script>var GLOBAL_CONFIG = { 
+  root: 'yoyord.github.io/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"簡"},
+  noticeOutdate: {"limitDay":500,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  bookmark: {
+    message_prev: '按',
+    message_next: '键将本页加入书签'
+  },
+  runtime_unit: '天',
+  runtime: false,
+  copyright: undefined,
+  ClickShowText: undefined,
+  medium_zoom: true,
+  fancybox: true,
+  Snackbar: {"bookmark":{"message_prev":"按","message_next":"键将本页加入书签"},"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#121212","position":"bottom-left"},
+  justifiedGallery: {
+    js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+    css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+  },
+  baiduPush: true,
+  highlightCopy: true,
+  highlightLang: true,
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isanchor: false    
+}</script><script>var GLOBAL_CONFIG_SITE = { 
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isSidebar: true,
+  postUpdate: '2020-10-09 19:00:00'
+}</script><noscript><style>
+#nav {
+  opacity: 1
+}
+.justified-gallery img{
+  opacity: 1
+}
+</style></noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sviptzk/HexoStaticFile@master/Hexo/css/flink.min.css"><meta name="generator" content="Hexo 6.1.0"></head><body><div id="mobile-sidebar"><div id="menu_mask"></div><div id="mobile-sidebar-menus"><div class="mobile_author_icon"><img class="avatar-img" src="https://portrait.gitee.com/uploads/avatars/user/167/502893_Yoyo21_1578925881.png!avatar100" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="mobile_post_data"><div class="mobile_data_item is-center"><div class="mobile_data_link"><a href="yoyord.github.io/archives/"><div class="headline">文章</div><div class="length_num">24</div></a></div></div><div class="mobile_data_item is-center">      <div class="mobile_data_link"><a href="yoyord.github.io/tags/"><div class="headline">标签</div><div class="length_num">36</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="yoyord.github.io/"><i class="fa-fw fa fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="yoyord.github.io/archives/"><i class="fa-fw fa fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="yoyord.github.io/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="yoyord.github.io/categories/"><i class="fa-fw fa fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page"><i class="fa-fw fas fa-list"></i><span> 媒体</span><i class="fas fa-chevron-down menus-expand"></i></a><ul class="menus_item_child"><li><a class="site-page" href="yoyord.github.io/bangumis/"><i class="fa-fw fab fa-youtube"></i><span> 番剧</span></a></li><li><a class="site-page" href="yoyord.github.io/movies/"><i class="fa-fw fa fa-film"></i><span> 电影</span></a></li><li><a class="site-page" href="yoyord.github.io/books/"><i class="fa-fw fas fa-book"></i><span> 书单</span></a></li><li><a class="site-page" href="yoyord.github.io/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li></ul></div></div></div></div><i class="fas fa-arrow-right on" id="toggle-sidebar"></i><div id="sidebar"><div class="sidebar-toc"><div class="sidebar-toc__title">目录</div><div class="sidebar-toc__progress"><span class="progress-notice">你已经读了</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar">     </div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9C%B0%E7%BC%96%E5%B7%A5%E5%85%B7%E4%B9%8B%E9%AB%98%E6%95%88%E8%8D%89"><span class="toc-number">1.</span> <span class="toc-text">地编工具之高效草</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88%E9%97%AE%E9%A2%98%EF%BC%9F"><span class="toc-number">1.1.</span> <span class="toc-text">解决什么问题？</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%A0%E7%BB%9F%E5%81%9A%E6%B3%95"><span class="toc-number">1.1.1.</span> <span class="toc-text">传统做法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3"><span class="toc-number">1.2.</span> <span class="toc-text">如何解决</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0%E6%80%9D%E8%B7%AF"><span class="toc-number">1.3.</span> <span class="toc-text">实现思路</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#GPU-Instancing"><span class="toc-number">1.3.1.</span> <span class="toc-text">GPU Instancing</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Culling-Group"><span class="toc-number">1.3.2.</span> <span class="toc-text">Culling Group</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9C%B0%E5%BD%A2%E5%88%86%E5%9D%97x-96"><span class="toc-number">1.3.3.</span> <span class="toc-text">地形分块x&#96;</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E6%9E%90%E6%AD%A5%E9%AA%A4"><span class="toc-number">1.4.</span> <span class="toc-text">解析步骤</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%B7%E8%8D%89%E6%B5%81%E7%A8%8B"><span class="toc-number">1.4.1.</span> <span class="toc-text">刷草流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B3%E9%94%AE%E7%B1%BB-%E5%BE%85%E6%95%B4%E7%90%86"><span class="toc-number">1.4.2.</span> <span class="toc-text">关键类(待整理)</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#GPUInstancingManager-%E7%BB%A7%E6%89%BFMonobehaviour"><span class="toc-number">1.4.2.1.</span> <span class="toc-text">GPUInstancingManager 继承Monobehaviour</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#GUPInstancingGroup"><span class="toc-number">1.4.2.2.</span> <span class="toc-text">GUPInstancingGroup</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#GPUInstancingCell"><span class="toc-number">1.4.2.3.</span> <span class="toc-text">GPUInstancingCell</span></a></li></ol></li></ol></li></ol></li></ol></div></div></div><div id="body-wrap"><div id="web_bg" data-type="photo"></div><header class="post-bg" id="page-header" style="background-image: url(https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg)"><nav id="nav"><span class="pull-left" id="blog_name"><a class="blog_title" id="site-name" href="yoyord.github.io/">Yoyo</a></span><span class="pull-right menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="yoyord.github.io/"><i class="fa-fw fa fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="yoyord.github.io/archives/"><i class="fa-fw fa fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="yoyord.github.io/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="yoyord.github.io/categories/"><i class="fa-fw fa fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page"><i class="fa-fw fas fa-list"></i><span> 媒体</span><i class="fas fa-chevron-down menus-expand"></i></a><ul class="menus_item_child"><li><a class="site-page" href="yoyord.github.io/bangumis/"><i class="fa-fw fab fa-youtube"></i><span> 番剧</span></a></li><li><a class="site-page" href="yoyord.github.io/movies/"><i class="fa-fw fa fa-film"></i><span> 电影</span></a></li><li><a class="site-page" href="yoyord.github.io/books/"><i class="fa-fw fas fa-book"></i><span> 书单</span></a></li><li><a class="site-page" href="yoyord.github.io/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li></ul></div></div><span class="toggle-menu close"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></span></span></nav><div id="post-info"><div id="post-title"><div class="posttitle">高效地编刷草</div></div><div id="post-meta"><div class="meta-firstline"><time class="post-meta__date"><span class="post-meta__date-created" title="发表于 2020-10-09 19:00:00"><i class="far fa-calendar-alt fa-fw"></i> 发表于 2020-10-09</span><span class="post-meta__separator">|</span><span class="post-meta__date-updated" title="更新于 2020-10-09 19:00:00"><i class="fas fa-history fa-fw"></i> 更新于 2020-10-09</span></time></div><div class="meta-secondline"> </div><div class="meta-thirdline"><span class="post-meta-pv-cv"><i class="far fa-eye fa-fw post-meta__icon"></i><span>阅读量:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout_post" id="content-inner"><article id="post"><div class="post-content" id="article-container"><h1 id="地编工具之高效草"><a href="#地编工具之高效草" class="headerlink" title="地编工具之高效草"></a>地编工具之高效草</h1><h2 id="解决什么问题？"><a href="#解决什么问题？" class="headerlink" title="解决什么问题？"></a>解决什么问题？</h2><h3 id="传统做法"><a href="#传统做法" class="headerlink" title="传统做法"></a>传统做法</h3><ul>
+<li>面片草<ul>
+<li>合批方式：静态合批</li>
+<li>动态效果：通过顶点色限制，局部顶点动画摆动</li>
+<li>局限性：内存很大，无法差异化</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="如何解决"><a href="#如何解决" class="headerlink" title="如何解决"></a>如何解决</h2><ul>
+<li><p>GPU Instancing 代替 静态合批</p>
+<p><img src= "yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201020163114115.png" alt="image-20201020163114115"></p>
+</li>
+<li><p>优化：面片草改模型草，增加LOD，合成一簇草丛，减少GPU Instancing DrawCall</p>
+</li>
+<li><p>优化：对地形分块，实现AOI (256 x 256  , 128 x128) GPU Instancing 只需要判断周围九宫格</p>
+</li>
+<li><p>优化：利用Culling Group实现LOD和剔除逻辑</p>
+</li>
+</ul>
+<hr>
+<h2 id="实现思路"><a href="#实现思路" class="headerlink" title="实现思路"></a>实现思路</h2><h3 id="GPU-Instancing"><a href="#GPU-Instancing" class="headerlink" title="GPU Instancing"></a>GPU Instancing</h3><ul>
+<li><p>定义</p>
+<ul>
+<li>使用GPU Instancing可以一次渲染相同网格的多个副本，仅使用少量<a href="https://link.zhihu.com/?target=https://docs.unity3d.com/Manual/DrawCallBatching.html">DrawCalls</a>。在渲染诸如建筑、树木、草等在场景中重复出现的事物时，GPU Instancing很有用。</li>
+<li>每次draw call，GPU Instancing只渲染<strong>相同</strong>的网格，但是每个实例可以有不同的参数(例如，color或scale)，以增加变化，减少重复的出现。</li>
+<li>GPU Instancing可以减少每个场景draw calls次数。这显著提升了渲染性能。</li>
+</ul>
+</li>
+<li><p>启用</p>
+<ul>
+<li>为Materials启用GPU Instancing</li>
+</ul>
+<p><img src= "yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201020164924812.png" alt="image-20201020164924812"></p>
+<ul>
+<li>Material使用的Shader支持GPU Instancing时，才会显示这个复选框。</li>
+<li>支持的shader 请查看<a target="_blank" rel="noopener" href="https://docs.unity3d.com/Manual/shader-StandardShader.html">standard Shaders</a></li>
+</ul>
+</li>
+<li><p>注意事项</p>
+<ul>
+<li>Unity自动为instancing调用选择MeshRenderer组件和<strong>Graphics.DrawMesh</strong></li>
+<li>不支持<a target="_blank" rel="noopener" href="https://docs.unity3d.com/ScriptReference/SkinnedMeshRenderer.html">SkinnedMeshRenderer</a><ul>
+<li><a target="_blank" rel="noopener" href="https://gameinstitute.qq.com/community/detail/129206">skinnedMeshRender合批思路</a></li>
+</ul>
+</li>
+<li>一次DrawCall 支持<strong>1023</strong>个共享相同Mesh和相同Material的GameObjects的物体</li>
+<li>在批处理时，Unity将静态批处理优先于instancing。如果你把某个GameObject标记为使用static batching，并且Unity成功批处理了它，Uinty会在这个GameObject上禁用instancing，即使它的Renderer使用了instancing Shader。这种情况发生时，Inspector 窗口会显示一条警告，建议你禁用Static Batching。</li>
+<li>GPUInstancing的优先级高于<strong>dynamic batching</strong>。如果Unity可以instance一个Mesh，就会禁用在这个Mesh上dynamic batching。</li>
+</ul>
+</li>
+<li><p>如何做</p>
+<ul>
+<li>可以在c#脚本中调用<a target="_blank" rel="noopener" href="https://docs.unity3d.com/ScriptReference/Graphics.DrawMesh.html">Graphics.DrawMeshInstanced</a>和<a target="_blank" rel="noopener" href="https://docs.unity3d.com/ScriptReference/Graphics.DrawMeshInstancedIndirect.html">Graphics.DrawMeshInstancedIndirect</a>来完成GPU instancing。</li>
+</ul>
+</li>
+<li><p>个体差异化</p>
+<ul>
+<li>默认情况下，Unity在每个instanced draw call中只对具有不同Transform的GameObjects实例进行批处理</li>
+</ul>
+</li>
+</ul>
+<h3 id="Culling-Group"><a href="#Culling-Group" class="headerlink" title="Culling Group"></a>Culling Group</h3><ul>
+<li><p>主要功能：</p>
+<ul>
+<li>高效的计算，一组包围球 是否被在指定摄像机观察到，以及与某个参考点的位置距离关系</li>
+<li>当某个包围球体 对于指定摄像机 的可见状态发现改变，或者 它进入或者离开参考点的某个距离范围时，CullingGroup会通知你，然后你可以对其包围的游戏对象进行自己的处理或者优化。</li>
+</ul>
+</li>
+<li><p>用法：</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">CullingGroup <span class="keyword">group</span> = <span class="keyword">new</span> CullingGroup(); <span class="comment">//需要new 一个CullingGroup 结合分块思路，每个单位块都拥有一个CullingGroup</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">group</span>.SetBoundingSpheres(spheresList);<span class="comment">// 将数组的引用提供给CullingGroup</span></span><br><span class="line"><span class="keyword">group</span>.SetBoundingSphereCount(count);<span class="comment">// 确切的告诉CullingGroup，你到底使用了几个包围盒</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">group</span>.onStateChanged = StateChangedMethod;<span class="comment">// 设置回调  上述状态发现改变时通知</span></span><br><span class="line"><span class="keyword">group</span>.targetCamera = Camera.main;<span class="comment">// 设置指定的摄像机</span></span><br><span class="line"><span class="keyword">group</span>.SetDistanceReferencePoint (Camera.main.transform);<span class="comment">// 设置参考点</span></span><br><span class="line"><span class="keyword">group</span>.SetBoundingDistances (<span class="keyword">new</span> <span class="built_in">float</span>[]&#123; <span class="number">5f</span>, <span class="number">10f</span>, <span class="number">20f</span> &#125;);<span class="comment">// 设置参考距离 类似LOD的level绑定距离</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>注意事项</p>
+<ul>
+<li><p>CullingGroup 一般会实现 IDispose 接口，不使用的时候要手动释放</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">group</span>.Dispose();</span><br><span class="line"><span class="keyword">group</span> = <span class="literal">null</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>onStateChanged 的回调 CullingGroupEvenet</p>
+<ul>
+<li>通常会用 isVisible 去判断 可见状态，从而去优化逻辑</li>
+</ul>
+</li>
+<li><p>在sceneView模式下 便于编辑器刷草 如果想看到GPUInstancing的物体 可以再写一套去实现(看业务需求美术是否需要在场景相机下看到所有的草)</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="地形分块x-96"><a href="#地形分块x-96" class="headerlink" title="地形分块x&#96;"></a>地形分块x&#96;</h3><ul>
+<li>意义<ul>
+<li>分块和未分块的性能消耗是成几何倍，场景下渲染物体越多性能消耗的差距越明显</li>
+<li>效能消耗主要体现在 未分块的情况 直接遍历了全部渲染物体 做Culling Group 的遍历循环。相当于是在Update里面循环遍历(量级越大耗时越多)，CPU耗时很高。</li>
+<li>分块则只提取AOI策略的格子，这里采用的是9宫格，量级是恒定的，只多了部分性能（可以忽略不计）在9宫格的维护。</li>
+</ul>
+</li>
+<li>如何做？<ul>
+<li>在产生Asset的时候，增加 Vector2 存储该单位快的格子坐标，便于管理。<ul>
+<li>因为需要序列化，所以无法使用字典， 用List&lt;&gt; 与 Vector2 作为管理， 用到的时候 还是需要多一层遍历</li>
+</ul>
+</li>
+<li>在解析Asset的时候，先去获取AOI策略下格子内的物体，然后拿这部分物体做CullingGroup 和LOD剔除，满足条件的就拿去GPU Instancing渲染</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="解析步骤"><a href="#解析步骤" class="headerlink" title="解析步骤"></a>解析步骤</h2><h3 id="刷草流程"><a href="#刷草流程" class="headerlink" title="刷草流程"></a>刷草流程</h3><ul>
+<li>产生数据 Assetx&#96;<ul>
+<li>监听左键按键<ul>
+<li>画刷的展示，这里用的是一个贴花的思路</li>
+</ul>
+</li>
+<li>判断是否当前点击符合条件<ul>
+<li>Layer判断 射线判断</li>
+</ul>
+</li>
+<li>如果都满足 PrefabUtility.InstantiatePrefab 生成 gameObject 存储到 笔刷里面</li>
+<li>生成Asset</li>
+</ul>
+</li>
+<li>解析Asset<ul>
+<li>通过Asset的数据去DrawMeshInstanced</li>
+<li>其中优化点 密度LOD 根据距离去剔除LOD为0的</li>
+<li>新增九宫格 直接不参与密度LOD计算</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="关键类-待整理"><a href="#关键类-待整理" class="headerlink" title="关键类(待整理)"></a>关键类(待整理)</h3><h4 id="GPUInstancingManager-继承Monobehaviour"><a href="#GPUInstancingManager-继承Monobehaviour" class="headerlink" title="GPUInstancingManager 继承Monobehaviour"></a>GPUInstancingManager 继承Monobehaviour</h4><ul>
+<li><p>作为管理类 里面包含</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">  <span class="keyword">public</span> GPUInstancingDatas gPUInstancingDatas; <span class="comment">//保存的asset</span></span><br><span class="line">  <span class="keyword">private</span> List&lt;GPUInstancingGroup&gt; m_GPUInstancingGroup; <span class="comment">//所有呈现的物体的管理集合</span></span><br><span class="line"><span class="keyword">private</span> List&lt;GPUInstancingUnitCell&gt; m_GPUInstancingUnitCell; <span class="comment">//单位格子的管理集合</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="GUPInstancingGroup"><a href="#GUPInstancingGroup" class="headerlink" title="GUPInstancingGroup"></a>GUPInstancingGroup</h4><ul>
+<li><p>包含了绘制功能 其API为</p>
+<p><img src= "yoyord.github.io/img/loading.gif" data-src="https://gitee.com/Yoyo21/image-hosting/raw/master/img/image-20201021103045054.png" alt="image-20201021103045054"></p>
+<ul>
+<li>其中矩阵 就是物体的坐标 旋转 缩放 的矩阵</li>
+</ul>
+</li>
+</ul>
+<h4 id="GPUInstancingCell"><a href="#GPUInstancingCell" class="headerlink" title="GPUInstancingCell"></a>GPUInstancingCell</h4></div><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:undefined">Yoyo</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://yoyord.github.io/posts/45887/">https://yoyord.github.io/posts/45887/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://yoyord.github.io" target="_blank">Yoyo</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="yoyord.github.io/tags/%E5%9C%B0%E5%BD%A2%E7%BC%96%E8%BE%91%E5%99%A8/">地形编辑器</a><a class="post-meta__tags" href="yoyord.github.io/tags/%E5%88%B7%E8%8D%89/">刷草</a><a class="post-meta__tags" href="yoyord.github.io/tags/%E4%BC%98%E5%8C%96/">优化</a></div><div class="post_share"><div class="social-share" data-image="https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css"/><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js"></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="yoyord.github.io/posts/17190/"><img class="prev-cover" data-src="https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg" onerror="onerror=null;src='yoyord.github.io/img/404.jpg'"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">现代图形学学习笔记(二)渲染管线</div></div></a></div><div class="next-post pull-right"><a href="yoyord.github.io/posts/34485/"><img class="next-cover" data-src="https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg" onerror="onerror=null;src='yoyord.github.io/img/404.jpg'"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">高性能Lua代码</div></div></a></div></nav><div class="relatedPosts"><div class="relatedPosts_headline"><i class="fas fa-thumbs-up fa-fw"></i><span> 相关推荐</span></div><div class="relatedPosts_list"><div class="relatedPosts_item"><a href="yoyord.github.io/posts/34485/" title="高性能Lua代码"><img class="relatedPosts_cover" data-src="https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="far fa-calendar-alt fa-fw"></i> 2020-10-09</div><div class="relatedPosts_title">高性能Lua代码</div></div></a></div></div></div></article></main><footer id="footer" data-type="color"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2022  <i id="heartbeat" class="fa fas fa-heartbeat"></i> Yoyo</div><div class="framework-info"><span>驱动 </span><a target="_blank" rel="noopener" href="https://hexo.io"><span>Hexo</span></a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly"><span>Butterfly</span></a></div></div><head><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/HCLonely/images@master/others/heartbeat.min.css"></head></footer></div><section id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="font_plus" type="button" title="放大字体"><i class="fas fa-plus"></i></button><button id="font_minus" type="button" title="缩小字体"><i class="fas fa-minus"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></section><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="yoyord.github.io/js/utils.js"></script><script src="yoyord.github.io/js/main.js"></script><script src="yoyord.github.io/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/medium-zoom/dist/medium-zoom.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module" defer></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js" async></script><script src="/js/calendar.js"></script><script src="/js/languages.js"></script></body></html>
